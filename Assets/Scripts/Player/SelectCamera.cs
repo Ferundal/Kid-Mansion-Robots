@@ -1,104 +1,94 @@
 using System.Collections;
-using System.Collections.Generic;
 using Player.Shoot;
 using UnityEngine;
-using UnityEngine.UI;
+using UnityEngine.Serialization;
 
-public class SelectCamera : MonoBehaviour
+namespace Player
 {
-    public GameObject mainCamera;
-    public GameObject aimCamera;
-    public GameObject aimReticle;
+    public class SelectCamera : MonoBehaviour
+    {
+        public GameObject mainCamera;
+        public GameObject aimCamera;
 
-    public GameObject player;
-    public Image crossHair;
-
-    public GameObject look;
-    public GameObject arrowPrefab;
-    public Transform fireTransform;
-
-    public bool mouseButtonIsPressed = false;
-
-    private bool mouseFire = false;
+        public GameObject player;
     
-    // Start is called before the first frame update
-    void Start()
-    {
-        aimCamera.SetActive(false);
-    }
+        public GameObject playerBody;
+        [SerializeField] private float aimRotationAngle;
+        [SerializeField] private float aimRotationTime;
+        private Vector3 _rotateAimOnEngle;
+        private Vector3 _rotateAimOffEngle;
+    
+        [SerializeField] private Gun gun;
+        [SerializeField] private Transform weaponPosition;
 
-    // Update is called once per frame
-    void Update()
-    {
-        RaycastHit _raycastHit;
-        Vector3 fwd = look.transform.TransformDirection(Vector3.forward);
+        public bool mouseButtonIsPressed = false;
+        private bool _isWeaponChanging = false;
 
-        if (Physics.Raycast(look.transform.position, fwd, out _raycastHit))
+        private void Awake()
         {
-            if (_raycastHit.transform.CompareTag("Item"))
+            _rotateAimOnEngle = new Vector3(0, -aimRotationAngle, 0);
+            _rotateAimOffEngle = -_rotateAimOnEngle;
+            gun = Instantiate(gun, weaponPosition.position, weaponPosition.rotation, weaponPosition);
+            gun.gameObject.SetActive(false);
+        }
+
+        // Start is called before the first frame update
+        void Start()
+        {
+            aimCamera.SetActive(false);
+        }
+
+        // Update is called once per frame
+        void Update()
+        {
+
+            if (Input.GetKeyDown("mouse 1") && !mouseButtonIsPressed && !_isWeaponChanging)
             {
-                crossHair.color = Color.green;
+                StartCoroutine(WeaponOn());
             }
-            else
+            else if (Input.GetKeyDown("mouse 1") && mouseButtonIsPressed && !_isWeaponChanging)
             {
-                crossHair.color = Color.white;
+                StartCoroutine(WeaponOff());
+            }
+        
+            if (mouseButtonIsPressed && !_isWeaponChanging && Input.GetKeyDown("mouse 0"))
+            {
+                gun.FireProjectile();
             }
         }
 
-        if (Input.GetKeyDown("mouse 1") && !mouseButtonIsPressed)
+        private IEnumerator WeaponOn()
         {
-            mouseButtonIsPressed = true;
-
-            // aimCamera.transform.position = mainCamera.transform.position;
-            // aimCamera.transform.rotation = mainCamera.transform.rotation;
-            
+            _isWeaponChanging = true;
+            gun.gameObject.SetActive(true);
+        
             mainCamera.SetActive(false);
             aimCamera.SetActive(true);
+        
+            mouseButtonIsPressed = true;
+        
+            yield return new WaitForSeconds(aimRotationTime);
             
-            StartCoroutine(ShowReticle());
+            playerBody.transform.Rotate(_rotateAimOnEngle);
+            _isWeaponChanging = false;
+            gun.SetLaser(true);
         }
-        else if (Input.GetKeyDown("mouse 1") && mouseButtonIsPressed)
+
+        private IEnumerator WeaponOff()
         {
-            mouseButtonIsPressed = false;
-            
-            // mainCamera.transform.position = aimCamera.transform.position;
-            // mainCamera.transform.rotation = aimCamera.transform.rotation;
-            
+            _isWeaponChanging = true;
+            gun.SetLaser(false);
+        
             mainCamera.SetActive(true);
             aimCamera.SetActive(false);
-            aimReticle.SetActive(false);
-        }
         
-        if (mouseButtonIsPressed && Input.GetKeyDown("mouse 0"))
-        {
-            StartCoroutine(FireArrow());
-        }
-    }
-    
-    IEnumerator FireArrow()
-    {
-        if (mouseFire)
-        {
-            yield return new WaitForSeconds(0.1f);
-        }
-        
-        GameObject projectile = Instantiate(arrowPrefab);
-        mouseFire = true;
+            mouseButtonIsPressed = false;
 
-        projectile.transform.forward = look.transform.forward;
-        projectile.transform.position = fireTransform.position + fireTransform.forward;
-        
-        
-        //Wait for the position to update
-        yield return new WaitForSeconds(0.05f);
-
-        projectile.GetComponent<ArrowProjectile>().Fire(player.transform);
-        mouseFire = false;
-    }
-    
-    IEnumerator ShowReticle()
-    {
-        yield return new WaitForSeconds(0.25f);
-        aimReticle.SetActive(enabled);
+            yield return new WaitForSeconds(aimRotationTime);
+            
+            playerBody.transform.Rotate(_rotateAimOffEngle);
+            _isWeaponChanging = false;
+            gun.gameObject.SetActive(false);
+        }
     }
 }

@@ -1,4 +1,5 @@
 ﻿using System.Collections;
+using Player;
 using StarterAssets.InputSystem;
 using UnityEngine;
 #if ENABLE_INPUT_SYSTEM && STARTER_ASSETS_PACKAGES_CHECKED
@@ -111,7 +112,6 @@ namespace StarterAssets
         public CharacterController controller;
         private StarterAssetsInputs _input;
         private GameObject _mainCamera;
-        public GameObject joyGun;
 
         private bool _gunState;
 
@@ -316,7 +316,6 @@ namespace StarterAssets
                 _animator.SetBool(_aimOn, false);
                 
                 _gunState = false;
-                joyGun.SetActive(false);
             }
             else if (_hasAnimator && isAim.mouseButtonIsPressed)
             {
@@ -406,7 +405,6 @@ namespace StarterAssets
         {
             yield return new WaitForSeconds(0.3f);
             _gunState = true;
-            joyGun.SetActive(_gunState);
         }
         
         private static float ClampAngle(float lfAngle, float lfMin, float lfMax)
