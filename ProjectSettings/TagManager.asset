@@ -8,6 +8,7 @@ TagManager:
   - Item
   - Fire
   - House
+  - Head
   layers:
   - Default
   - TransparentFX
