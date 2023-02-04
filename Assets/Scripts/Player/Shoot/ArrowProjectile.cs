@@ -1,5 +1,5 @@
-using System;
 using System.Collections;
+using House.ProjectileTargets;
 using UnityEngine;
 
 
@@ -44,13 +44,12 @@ namespace Player.Shoot
             currentTransform.position = collision.GetContact(0).point;
             currentTransform.rotation = Quaternion.LookRotation(-collision.GetContact(0).normal);
             currentTransform.parent = collision.gameObject.transform;
-//            if (collision.gameObject.GetComponent<IProjectileTarget>())
-            if (collision.gameObject.CompareTag("Item") && collision.gameObject.GetComponent<Rigidbody>())
+            if (collision.gameObject.CompareTag("Item"))
             {
-                
-                
+                AProjectileTarget projectileTarget = collision.gameObject.GetComponent<AProjectileTarget>();
+                projectileTarget.Activate();
+                return;
             }
-
             StartCoroutine(Countdown());
         }
 

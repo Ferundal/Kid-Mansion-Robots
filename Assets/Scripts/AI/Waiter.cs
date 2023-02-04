@@ -7,6 +7,8 @@ using UnityEngine.Serialization;
 
 namespace AI
 {
+    [RequireComponent(typeof(Collider))]
+    [RequireComponent(typeof(NavMeshAgent))]
     public class Waiter : MonoBehaviour
     {
         [FormerlySerializedAs("_pathArray")]
@@ -17,16 +19,18 @@ namespace AI
         [SerializeField] private string _workPointTag = "Work_Point";
         [SerializeField] private float _workTime = 5.0f;
         [Header("Editor visualization")]
-        [SerializeField] private float _sphereVerticalOffset = 4f;
-        [SerializeField] private float _sphereRadius = 2f;
+        [SerializeField] private float _sphereVerticalOffset = 0.2f;
+        [SerializeField] private float _sphereRadius = 0.2f;
         [Header("Player Detection")]
         [SerializeField] private GameObject _player;
         [SerializeField] private List<GameObject> _waiterAlarmMarkers;
-        [SerializeField] private float _verticalOffset = 1.0f;
-        [SerializeField] private float _rayOffset = 1.0f;
+        
+        [SerializeField][Range(-5, 5)] private float _verticalOffset = 1.0f;
+        [SerializeField][Range(0, 5)] private float _rayOffset = 1.0f;
 
 
-
+        private GameManager _gameManager;
+        
         private bool _isWorking = false;
         private bool _isPlayerSpoted = false;
 
@@ -38,9 +42,12 @@ namespace AI
         private RaycastHit _rightHit;
         private RaycastHit _leftHit;
 
+        
+        
         // Start is called before the first frame update
         private void Awake()
         {
+            _gameManager = GameManager.FindObjectOfType<GameManager>();
             _agent = GetComponent<NavMeshAgent>();
             _agent.SetDestination(pathArray[_i].transform.position);
             _rayRightPositionOffset = new Vector3(_rayOffset, _verticalOffset, 0);
@@ -78,8 +85,6 @@ namespace AI
                 && _leftHit.collider.gameObject == _player)
             {
                 PlayerDetected();
-            } else if (_isPlayerSpoted) {
-                _agent.SetDestination(_player.transform.position);
             }
         }
 
@@ -91,9 +96,23 @@ namespace AI
         }
 
 #if UNITY_EDITOR
-
+        private bool _isDetectRaySet = false;
+        
         void OnDrawGizmos()
         {
+            if (!_isDetectRaySet)
+            {
+                _isDetectRaySet = true;
+                _rayRightPositionOffset = new Vector3(_rayOffset, _verticalOffset, 0);
+                _rayLeftPositionOffset = new Vector3(-_rayOffset, _verticalOffset, 0);
+            }
+            else
+            {
+                _rayRightPositionOffset.x = _rayOffset;
+                _rayRightPositionOffset.y = _verticalOffset;
+                _rayLeftPositionOffset.x = -_rayOffset;
+                _rayLeftPositionOffset.y = _verticalOffset;
+            }
             // Draw a yellow sphere at the transform's position
             Gizmos.color = Color.green;
             GameObject firstPoint = null;
@@ -175,7 +194,17 @@ namespace AI
             {
                 waiterAlarmMarker.SetActive(true);
             }
-            Debug.Log("Player Detected");
+            _gameManager.EnableUserControl(false);
+        }
+
+        private void OnCollisionEnter(Collision collision)
+        {
+            if (collision.gameObject.CompareTag("Player"))
+            {
+                Debug.Log("To Room");
+                _agent.isStopped = true;
+                StartCoroutine(_gameManager.ReturnToRoom());
+            }
         }
     }
 }

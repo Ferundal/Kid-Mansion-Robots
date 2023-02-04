@@ -1,23 +1,50 @@
-using System;
 using System.Collections;
-using System.Collections.Generic;
 using StarterAssets;
 using UI;
-using Unity.VisualScripting;
+using UI.Fade;
 using UnityEngine;
-using UnityEngine.Serialization;
+using UnityEngine.InputSystem;
 
 [RequireComponent(typeof(Collider))]
 public class GameManager : MonoBehaviour
 {
+    private const float energyMinValue = 0.0f;
+    private const float energyMaxValue = 100.0f;
     [SerializeField] private ThirdPersonController thirdPersonController;
+    [SerializeField] private PlayerInput playerInput;
     
     [Header("Energy")]
     [SerializeField] private AEnergyView energyView;
-    [SerializeField][Range(0, 100)] private float energy = 100.0f;
+    [SerializeField][Range(energyMinValue, energyMaxValue)] private float energy = energyMaxValue;
+    [SerializeField] private AFadeScreen fadeScreen;
+
+    private bool _isPlayerActive = true;
+
+    public float Energy
+    {
+        get => energy;
+        set
+        {
+            Debug.Log(value);
+            switch (value)
+            {
+                case > energyMaxValue:
+                    energy = energyMaxValue;
+                    break;
+                case < energyMinValue:
+                    energy = energyMinValue;
+                    break;
+                default:
+                    energy = value;
+                    break;
+            }
+            _startEnergy = energy;
+            _startTime = Time.time;
+        }
+    }
     [SerializeField][Range(0, 50)] private float startEnergyRate = 1.0f;
     private float _energyRate;
-    private bool _isMoving = false;
+    private bool _isMoving;
     private float _startTime;
     private float _startEnergy;
     
@@ -29,6 +56,11 @@ public class GameManager : MonoBehaviour
 
     private void Update()
     {
+        if (!_isPlayerActive)
+        {
+            return;
+        }
+
         if (thirdPersonController.isStop)
         {
             if (_isMoving)
@@ -49,12 +81,11 @@ public class GameManager : MonoBehaviour
         }
         if (energy <= 0)
         {
-            ReturnToRoom();
-            energy = 100.0f;
+            StartCoroutine(ReturnToRoom());
         }
         energyView.Energy = energy;
     }
-
+    
     public void ChangeEnergyRate(float energyRateModificator)
     {
         if (_isMoving)
@@ -63,16 +94,32 @@ public class GameManager : MonoBehaviour
             _startTime = Time.time;
         }
         _energyRate *= energyRateModificator;
-        Debug.Log($"Rate {_energyRate}");
     }
 
-    
-    private void ReturnToRoom()
+    public void EnableUserControl(bool isEnabled)
     {
+        if (isEnabled)
+            playerInput.actions.Enable();
+        else
+            playerInput.actions.Disable();
+    }
+    
+    public IEnumerator ReturnToRoom()
+    {
+        _isPlayerActive = false;
+        yield return StartCoroutine(fadeScreen.Fade(true));
+        EnableUserControl(true);
         thirdPersonController.controller.enabled = false;
         thirdPersonController.gameObject.transform.position = thirdPersonController.spawnPoint.transform.position;
+        thirdPersonController.gameObject.transform.rotation = thirdPersonController.spawnPoint.transform.rotation;
         thirdPersonController.controller.enabled = true;
+        yield return StartCoroutine(fadeScreen.Fade(false));
+        EnableUserControl(false);
         _energyRate = startEnergyRate;
         _isMoving = false;
+        _isPlayerActive = true;
+        energy = energyMaxValue;
     }
+    
+    
 }

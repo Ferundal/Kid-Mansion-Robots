@@ -1,28 +1,26 @@
-using System;
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
-public class FollowPlayer : MonoBehaviour
+namespace House.SecurityCamera
 {
-    [HideInInspector] public bool isActive = true;
-    [SerializeField] private Transform eyeTransform;
-    [SerializeField] private float highOffset = 1.0f;
-    private Transform _startEyeTransform;
-    private GameObject _head;
-    private Vector3 _offset;
-    private void Awake()
+    public class FollowPlayer : MonoBehaviour
     {
-        _startEyeTransform = eyeTransform;
-        _head = GameObject.FindWithTag("Head");
-    }
-    
-    private void OnTriggerStay(Collider other)
-    {
-        if (other.gameObject.CompareTag("Player"))
+        [HideInInspector] public bool isActive = true;
+        [SerializeField] private Transform eyeTransform;
+        private Transform _startEyeTransform;
+        private GameObject _head;
+        private Vector3 _offset;
+        private void Awake()
         {
-            eyeTransform.LookAt(_head.transform);
-            Debug.Log("Camera See you");
+            _startEyeTransform = eyeTransform;
+            _head = GameObject.FindWithTag("Head");
+        }
+    
+        private void OnTriggerStay(Collider other)
+        {
+            if (isActive && other.gameObject.CompareTag("Player"))
+            {
+                eyeTransform.LookAt(_head.transform);
+            }
         }
     }
 }
