@@ -947,7 +947,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   layerToHit:
     serializedVersion: 2
-    m_Bits: 469
+    m_Bits: 465
   maxSearchDistance: 500
 --- !u!120 &2705312546228861932
 LineRenderer:

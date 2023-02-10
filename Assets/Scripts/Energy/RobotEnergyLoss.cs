@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using UnityEngine;
 
@@ -19,16 +20,15 @@ namespace Energy
             _roomba = GetComponent<Roomba>();
         }
 
-        private void OnTriggerEnter(Collider other)
+        private void OnCollisionEnter(Collision collision)
         {
-            if (_onCooldown || !other.CompareTag("Player")) return;
-            Debug.Log("RobotCollision");
-            _roomba.GoAway(other.gameObject);
-            _gameManager.Energy -= energyLossAmount;
+            if (_onCooldown || !collision.gameObject.CompareTag("Player")) return;
             _onCooldown = true;
+            Debug.Log("RobotCollision");
+            _roomba.GoAway(collision.gameObject);
+            _gameManager.Energy -= energyLossAmount;
             StartCoroutine(ResetCooldown());
         }
-
         private IEnumerator ResetCooldown()
         {
             yield return new WaitForSeconds(cooldownTime);

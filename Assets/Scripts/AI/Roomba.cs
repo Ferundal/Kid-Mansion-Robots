@@ -27,8 +27,6 @@ public class Roomba : MonoBehaviour
     public void GoAway(GameObject avoidObject)
     {
         Debug.Log("ShouldStop");
-        _isPatrolling = false;
-        _agent.isStopped = true;
         StartCoroutine(FindNewPath(avoidObject));
     }
 
@@ -65,12 +63,15 @@ public class Roomba : MonoBehaviour
 
     private IEnumerator FindNewPath(GameObject avoidObject)
     {
+        _isPatrolling = false;
+        _agent.isStopped = true;
         yield return new WaitForSeconds(delayTime);
         _isPatrolling = true;
         int prevIndex = --_i;
         if (prevIndex < 0)
             _i = pathArray.Count - 1;
         PathGeneration(pathArray[_i].transform.position);
+        _agent.isStopped = false;
     }
     
     

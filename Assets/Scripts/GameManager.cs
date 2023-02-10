@@ -25,7 +25,6 @@ public class GameManager : MonoBehaviour
         get => energy;
         set
         {
-            Debug.Log(value);
             switch (value)
             {
                 case > energyMaxValue:
@@ -51,7 +50,7 @@ public class GameManager : MonoBehaviour
     private void Awake()
     {
         _energyRate = startEnergyRate;
-        energyView.Energy = (int)energy;
+        energyView.Energy = (int)Energy;
     }
 
     private void Update()
@@ -83,7 +82,7 @@ public class GameManager : MonoBehaviour
         {
             StartCoroutine(ReturnToRoom());
         }
-        energyView.Energy = energy;
+        energyView.Energy = Energy;
     }
     
     public void ChangeEnergyRate(float energyRateModificator)
@@ -108,13 +107,13 @@ public class GameManager : MonoBehaviour
     {
         _isPlayerActive = false;
         yield return StartCoroutine(fadeScreen.Fade(true));
-        EnableUserControl(true);
+        EnableUserControl(false);
         thirdPersonController.controller.enabled = false;
         thirdPersonController.gameObject.transform.position = thirdPersonController.spawnPoint.transform.position;
         thirdPersonController.gameObject.transform.rotation = thirdPersonController.spawnPoint.transform.rotation;
         thirdPersonController.controller.enabled = true;
         yield return StartCoroutine(fadeScreen.Fade(false));
-        EnableUserControl(false);
+        EnableUserControl(true);
         _energyRate = startEnergyRate;
         _isMoving = false;
         _isPlayerActive = true;

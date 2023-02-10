@@ -22,14 +22,13 @@ public class CenterPoint : MonoBehaviour
             gameObject.transform.position = defaultTransform.position;
             return;
         }
-        RaycastHit hit;
 
-        if (Physics.Raycast(mainCamera.position, mainCamera.forward, out hit, maxSearchDistance, layerToHit))
+        if (Physics.Raycast(mainCamera.position, mainCamera.forward, out var hit, maxSearchDistance, layerToHit))
         {
             if (hit.collider)
             {
                 //gameObject.transform.position = hit.point;
-                transform.position = Vector3.MoveTowards(transform.position, hit.point, movementStep );
+                transform.position = hit.point;
             }
         }
         else
