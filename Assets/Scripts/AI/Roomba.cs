@@ -26,7 +26,7 @@ public class Roomba : MonoBehaviour
 
     public void GoAway(GameObject avoidObject)
     {
-        Debug.Log("ShouldStop");
+
         StartCoroutine(FindNewPath(avoidObject));
     }
 

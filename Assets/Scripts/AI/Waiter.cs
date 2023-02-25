@@ -18,9 +18,11 @@ namespace AI
         [Header("Work Stop Points")]
         [SerializeField] private string _workPointTag = "Work_Point";
         [SerializeField] private float _workTime = 5.0f;
+#if UNITY_EDITOR
         [Header("Editor visualization")]
         [SerializeField] private float _sphereVerticalOffset = 0.2f;
         [SerializeField] private float _sphereRadius = 0.2f;
+#endif
         [Header("Player Detection")]
         [SerializeField] private GameObject _player;
         [SerializeField] private List<GameObject> _waiterAlarmMarkers;
@@ -32,8 +34,11 @@ namespace AI
         private GameManager _gameManager;
         
         private bool _isWorking = false;
+        private bool _isFixing = false;
         private bool _isPlayerSpoted = false;
 
+        private GameObject _currentTarget;
+        
         private NavMeshAgent _agent;
         private int _i = 0;
         private Vector3 _rayBaseDirection = Vector3.forward * 1000;
@@ -42,7 +47,13 @@ namespace AI
         private RaycastHit _rightHit;
         private RaycastHit _leftHit;
 
-        
+        private Queue<KeyValuePair<Transform, Rigidbody>> _taskQueue;
+
+        public void AddFixFallenItemTask(Transform startPosition, Rigidbody movedObject)
+        {
+            _isFixing = true;
+            _taskQueue.Enqueue(new KeyValuePair<Transform, Rigidbody>(startPosition, movedObject));
+        }
         
         // Start is called before the first frame update
         private void Awake()
@@ -56,17 +67,32 @@ namespace AI
             {
                 waiterAlarmMarker.SetActive(false);
             }
-        }
 
-        // Update is called once per frame
+            _taskQueue = new Queue<KeyValuePair<Transform, Rigidbody>>();
+        }
+        
         private void LateUpdate()
         {
-            if (Math.Abs(transform.position.x - pathArray[_i].transform.position.x) < _precision 
-                && Math.Abs(transform.position.z - pathArray[_i].transform.position.z) < _precision
-                && !_isWorking
-                && !_isPlayerSpoted)
+            if (_isPlayerSpoted || _isWorking) return;
+
+            if (Math.Abs(transform.position.x - _currentTarget.transform.position.x) < _precision 
+                && Math.Abs(transform.position.z - _currentTarget.transform.position.z) < _precision)
             {
-                if (pathArray[_i].gameObject.CompareTag(_workPointTag))
+                if (_isFixing)
+                {
+                    var task = _taskQueue.Dequeue();
+                    task.Value.position = task.Key.position;
+                    task.Value.rotation = task.Key.rotation;
+                    if (_taskQueue.Count == 0)
+                    {
+                        _isFixing = false;
+                    }
+                    else
+                    {
+                        
+                    }
+                }
+                if (_currentTarget.gameObject.CompareTag(_workPointTag))
                 {
                     _isWorking = true;
                     StartCoroutine(WorkCoorutine());
@@ -76,8 +102,7 @@ namespace AI
                     GoToNextPoint();
                 }
             }
-            if (!_isPlayerSpoted &&
-                Physics.Raycast(transform.position + transform.rotation * _rayRightPositionOffset, 
+            if (Physics.Raycast(transform.position + transform.rotation * _rayRightPositionOffset, 
                     transform.rotation * _rayBaseDirection, out _rightHit)
                 && Physics.Raycast(transform.position + transform.rotation * _rayLeftPositionOffset, 
                     transform.rotation * _rayBaseDirection, out _leftHit)
@@ -170,7 +195,8 @@ namespace AI
             Gizmos.DrawRay(transform.position + transform.rotation * _rayLeftPositionOffset, transform.rotation * _rayBaseDirection);
         }
 #endif
-
+        
+        
         private void GoToNextPoint()
         {
             if (++_i >= pathArray.Count)
@@ -201,7 +227,6 @@ namespace AI
         {
             if (collision.gameObject.CompareTag("Player"))
             {
-                Debug.Log("To Room");
                 _agent.isStopped = true;
                 StartCoroutine(_gameManager.ReturnToRoom());
             }
