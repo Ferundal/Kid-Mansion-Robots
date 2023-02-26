@@ -15,6 +15,7 @@ namespace AI
         [Header("Path options")]
         [SerializeField] private List<GameObject> pathArray;
         [SerializeField] private float _precision = 0.2f;
+        [SerializeField] private float _precisionItemBonus = 1.0f;
         [Header("Work Stop Points")]
         [SerializeField] private string _workPointTag = "Work_Point";
         [SerializeField] private float _workTime = 5.0f;
@@ -46,13 +47,22 @@ namespace AI
         private Vector3 _rayRightPositionOffset;
         private RaycastHit _rightHit;
         private RaycastHit _leftHit;
+        private Coroutine _workCoroutine;
 
         private Queue<KeyValuePair<Transform, Rigidbody>> _taskQueue;
 
         public void AddFixFallenItemTask(Transform startPosition, Rigidbody movedObject)
         {
             _isFixing = true;
+            _precision += _precisionItemBonus;
             _taskQueue.Enqueue(new KeyValuePair<Transform, Rigidbody>(startPosition, movedObject));
+            _currentTarget = _taskQueue.Peek().Value.gameObject;
+            _agent.SetDestination(_currentTarget.transform.position);
+            if (_isWorking && !_isFixing)
+            {
+                _isWorking = false;
+                StopCoroutine(_workCoroutine);
+            }
         }
         
         // Start is called before the first frame update
@@ -60,42 +70,32 @@ namespace AI
         {
             _gameManager = GameManager.FindObjectOfType<GameManager>();
             _agent = GetComponent<NavMeshAgent>();
-            _agent.SetDestination(pathArray[_i].transform.position);
+            _currentTarget = pathArray[_i];
+            _agent.SetDestination(_currentTarget.transform.position);
             _rayRightPositionOffset = new Vector3(_rayOffset, _verticalOffset, 0);
             _rayLeftPositionOffset = new Vector3(-_rayOffset, _verticalOffset, 0);
             foreach(GameObject waiterAlarmMarker in _waiterAlarmMarkers)
             {
                 waiterAlarmMarker.SetActive(false);
             }
-
             _taskQueue = new Queue<KeyValuePair<Transform, Rigidbody>>();
         }
         
         private void LateUpdate()
         {
             if (_isPlayerSpoted || _isWorking) return;
-
             if (Math.Abs(transform.position.x - _currentTarget.transform.position.x) < _precision 
                 && Math.Abs(transform.position.z - _currentTarget.transform.position.z) < _precision)
             {
                 if (_isFixing)
                 {
-                    var task = _taskQueue.Dequeue();
-                    task.Value.position = task.Key.position;
-                    task.Value.rotation = task.Key.rotation;
-                    if (_taskQueue.Count == 0)
-                    {
-                        _isFixing = false;
-                    }
-                    else
-                    {
-                        
-                    }
+                    _isWorking = true;
+                    StartCoroutine(FixWorkCoroutine());
                 }
-                if (_currentTarget.gameObject.CompareTag(_workPointTag))
+                else if (_currentTarget.gameObject.CompareTag(_workPointTag))
                 {
                     _isWorking = true;
-                    StartCoroutine(WorkCoorutine());
+                    _workCoroutine = StartCoroutine(WorkCoroutine());
                 }
                 else
                 {
@@ -113,10 +113,31 @@ namespace AI
             }
         }
 
-        IEnumerator WorkCoorutine()
+        private IEnumerator WorkCoroutine()
         {
             yield return new WaitForSeconds(_workTime);
             GoToNextPoint();
+            _isWorking = false;
+        }
+
+        private IEnumerator FixWorkCoroutine()
+        {
+            yield return new WaitForSeconds(_workTime);
+            var task = _taskQueue.Dequeue();
+            task.Value.gameObject.transform.position = task.Key.position;
+            task.Value.gameObject.transform.rotation = task.Key.rotation;
+            if (_taskQueue.Count == 0)
+            {
+                _isFixing = false;
+                _precision -= _precisionItemBonus;
+                _currentTarget = pathArray[_i];
+                _agent.SetDestination(_currentTarget.transform.position);
+            }
+            else
+            {
+                _currentTarget = _taskQueue.Peek().Value.gameObject;
+                _agent.SetDestination(_taskQueue.Peek().Value.position);
+            }
             _isWorking = false;
         }
 
@@ -204,7 +225,8 @@ namespace AI
                 _i = 0;
             }
 
-            PathGeneration(pathArray[_i].transform.position);
+            _currentTarget = pathArray[_i];
+            PathGeneration(_currentTarget.transform.position);
         }
 
         private void PathGeneration(Vector3 point)
@@ -229,6 +251,7 @@ namespace AI
             {
                 _agent.isStopped = true;
                 StartCoroutine(_gameManager.ReturnToRoom());
+                Debug.Log("ShouldTeleport");
             }
         }
     }

@@ -11,19 +11,21 @@ namespace House.ProjectileTargets
     
     public class Flowers : AProjectileTarget
     {
-        private Transform _startingPosition;
+        private GameObject _startingPosition;
         private Rigidbody _rigidbody;
         [SerializeField] private Waiter waiter;
 
         private void Awake()
         {
-            _startingPosition = gameObject.transform;
+            _startingPosition = new GameObject();
+            _startingPosition.transform.position = gameObject.transform.position;
+            _startingPosition.transform.rotation = gameObject.transform.rotation;
             _rigidbody = gameObject.GetComponent<Rigidbody>();
         }
 
         public override void Activate()
         {
-            waiter.AddFixFallenItemTask(_startingPosition, _rigidbody);
+            waiter.AddFixFallenItemTask(_startingPosition.transform, _rigidbody);
         }
     }
 }

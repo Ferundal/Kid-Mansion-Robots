@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using AI;
 using UnityEngine;
 
 namespace Energy
@@ -24,7 +25,6 @@ namespace Energy
         {
             if (_onCooldown || !other.gameObject.CompareTag("Player")) return;
             _onCooldown = true;
-            Debug.Log("RobotCollision");
             _roomba.GoAway(other.gameObject);
             _gameManager.Energy -= energyLossAmount;
             StartCoroutine(ResetCooldown());
